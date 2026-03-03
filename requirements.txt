@@ -1,0 +1,10 @@
+arcgis
+pandas
+python-dotenv
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+aiogram==3.6.0
+openpyxl
+
