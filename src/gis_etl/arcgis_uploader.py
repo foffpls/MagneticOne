@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable, List
-
+import json
 import logging
+from typing import Iterable, List
 
 import pandas as pd
 from arcgis.gis import GIS
@@ -90,8 +90,14 @@ def upload_dataframe(df: pd.DataFrame, clear_existing: bool = False) -> None:
 
     if clear_existing:
         logger.info("Видаляю існуючі об'єкти з шару: %s", layer.url)
-        delete_result = layer.delete_features(where="1=1")
-        logger.info("Результат видалення: %s", delete_result)
+        try:
+            delete_result = layer.delete_features(where="1=1")
+            logger.info("Результат видалення: %s", delete_result)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Відповідь delete_features не є JSON (можливо порожній шар або 204): %s. Продовжую.",
+                e,
+            )
 
     features = df_to_features(df)
     if features:
@@ -105,6 +111,12 @@ def upload_dataframe(df: pd.DataFrame, clear_existing: bool = False) -> None:
                 errors = [r for r in add_results if not r.get("success")]
                 if errors:
                     raise RuntimeError(f"Помилки при додаванні об'єктів: {errors}")
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "Відповідь edit_features не є JSON (можливо 204 No Content): %s. "
+                "Вважаю операцію успішною.",
+                exc,
+            )
         except Exception as exc:
             logger.error("Помилка при виконанні edit_features: %s", exc, exc_info=True)
             raise
